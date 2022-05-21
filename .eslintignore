@@ -1,3 +1,5 @@
 dist
 coverage
 docs
+src/
+webpack.config.js
