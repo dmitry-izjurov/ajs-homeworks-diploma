@@ -39,10 +39,6 @@ export function calcHealthLevel(health) {
   return 'high';
 }
 
-export function getRandomUnit(max) {
-  return Math.floor(Math.random() * (max + 1));
+export function getRandomUnit(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
 }
-
-// export function getRandomUnit(min, max) {
-//   return Math.floor(Math.random() * (max - min + 1) + min);
-// }

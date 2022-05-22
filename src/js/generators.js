@@ -8,10 +8,8 @@ import { getRandomUnit } from './utils';
  */
 export function* characterGenerator(allowedTypes, maxLevel) {
   // TODO: write logic here
-  const units = getRandomUnit(allowedTypes.length - 1);
+  const units = getRandomUnit(0, allowedTypes.length - 1);
   yield new allowedTypes[units](maxLevel);
-  // const index = getRandom(0, allowedTypes.length - 1);
-  // yield new allowedTypes[index](maxLevel);
 }
 
 
