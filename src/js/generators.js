@@ -1,4 +1,3 @@
-import { getRandomUnit } from './utils';
 /**
  * Generates random characters
  *
@@ -8,18 +7,20 @@ import { getRandomUnit } from './utils';
  */
 export function* characterGenerator(allowedTypes, maxLevel) {
   // TODO: write logic here
-  const units = getRandomUnit(0, allowedTypes.length - 1);
-  yield new allowedTypes[units](maxLevel);
+  while (true) {
+    const index = Math.floor(Math.random() * allowedTypes.length);
+    const level = Math.floor(Math.random() * maxLevel) + 1;
+    yield new allowedTypes[index](level);
+  }
 }
-
 
 export function generateTeam(allowedTypes, maxLevel, characterCount) {
   // TODO: write logic here
+  const unit = characterGenerator(allowedTypes, maxLevel);
   const team = [];
 
   for (let i = 0; i < characterCount; i += 1) {
-    team.push(...characterGenerator(allowedTypes, maxLevel));
+    team.push(unit.next().value);
   }
-
   return team;
 }
