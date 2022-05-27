@@ -5,6 +5,6 @@ import Magician from './Magician';
 import Undead from './Undead';
 import Vampire from './Vampire';
 
-export const units = [Bowman, Swordsman, Magician, Daemon, Undead, Vampire];
-export const userTeam = [Bowman, Swordsman, Magician];
-export const computerTeam = [Daemon, Undead, Vampire];
+export const unitsCls = [Bowman, Swordsman, Magician, Daemon, Undead, Vampire];
+export const userTeamCls = [Bowman, Swordsman, Magician];
+export const computerTeamCls = [Daemon, Undead, Vampire];

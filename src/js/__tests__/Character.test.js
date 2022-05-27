@@ -11,25 +11,25 @@ test('Объект не должен создаваться', () => {
 });
 
 test('Объект Bowman должен создаваться', () => {
-  expect(new Bowman(1)).toEqual({level: 1, attack: 25, defence: 25, health: 50, type: 'bowman'});
+  expect(new Bowman(1)).toEqual({level: 1, attack: 25, defence: 25, health: 100, type: 'bowman'});
 });
 
 test('Объект Daemon должен создаваться', () => {
-  expect(new Daemon(1)).toEqual({level: 1, attack: 10, defence: 40, health: 50, type: 'daemon'});
+  expect(new Daemon(1)).toEqual({level: 1, attack: 10, defence: 40, health: 100, type: 'daemon'});
 });
 
 test('Объект Magician должен создаваться', () => {
-  expect(new Magician(1)).toEqual({level: 1, attack: 10, defence: 40, health: 50, type: 'magician'});
+  expect(new Magician(1)).toEqual({level: 1, attack: 10, defence: 40, health: 100, type: 'magician'});
 });
 
 test('Объект Swordsman должен создаваться', () => {
-  expect(new Swordsman(1)).toEqual({level: 1, attack: 40, defence: 10, health: 50, type: 'swordsman'});
+  expect(new Swordsman(1)).toEqual({level: 1, attack: 40, defence: 10, health: 100, type: 'swordsman'});
 });
 
 test('Объект Undead должен создаваться', () => {
-  expect(new Undead(1)).toEqual({level: 1, attack: 40, defence: 10, health: 50, type: 'undead'});
+  expect(new Undead(1)).toEqual({level: 1, attack: 40, defence: 10, health: 100, type: 'undead'});
 });
 
 test('Объект Vampire должен создаваться', () => {
-  expect(new Vampire(1)).toEqual({level: 1, attack: 25, defence: 25, health: 50, type: 'vampire'});
+  expect(new Vampire(1)).toEqual({level: 1, attack: 25, defence: 25, health: 100, type: 'vampire'});
 });
