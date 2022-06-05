@@ -43,9 +43,11 @@ export function calcHealthLevel(health) {
   return 'high';
 }
 
-// возможные позиции игрока и компьютера при старте игры 
-export const positionUnitsGamer = [0,1,8,9,16,17,24,25,32,33,40,41,48,49,56,57];
-export const positionUnitsComputer = [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63];
+// возможные позиции игрока и компьютера при старте игры
+export const mainGrid = 8;                                            // игровая сетка NxN
+
+export const positionUnitsGamer = getBeginPosition(mainGrid, 'user');
+export const positionUnitsComputer = getBeginPosition(mainGrid, 'comp');
 
 export const userPositionTeam = [];                                   // позиции юнитов игрока на карте
 export const computerPositionTeam = [];                               // позиции юнитов компьютера на карте
@@ -53,6 +55,57 @@ export const characterUser = ['bowman', 'swordsman', 'magician'];     // стр�
 export const characterComp = ['daemon', 'undead', 'vampire'];         // строковые названия юнитов компьютера
 export const userTeam = generateTeam(userTeamCls, 1, 2);              // команда игрока
 export const computerTeam = generateTeam(computerTeamCls, 1, 2);      // команда компьютера
+
+// Функция, считающая начальные позиции юнитов игрока и компьютера
+function getBeginPosition(grid, player) {
+  let arr = [];
+  if (player === 'user') {
+    for (let i = 0; i < grid; i += 1) {
+      arr.push(i * grid);
+      arr.push(i * grid + 1);
+    }
+  }
+
+  if (player === 'comp') {
+    for (let i = 1; i <= grid; i += 1) {
+      arr.push(grid * i - 2);
+      arr.push(grid * i - 1);
+    }
+  }
+  return arr;
+}
+
+// Функция, определяющая границы карты
+export function getBorderMap(grid) {
+  let borderMap = {};
+  let arr = []; 
+  
+  for (let i = 0; i < grid; i += 1) {
+    arr.push(i);
+  }
+  borderMap.top = arr;
+  arr = [];
+  
+  for (let i = 0; i < grid; i += 1) {
+    arr.push(i * grid);
+  }
+  borderMap.left = arr;
+  arr = [];
+  
+  for (let i = 1; i <= grid; i += 1) {
+    arr.push(i * grid - 1);
+  }
+  borderMap.right = arr;
+  arr = [];
+  
+  for (let i = grid; i > 0; i -= 1) {
+    arr.push(grid * grid - i);
+  }
+  borderMap.bottom = arr;
+  arr = [];
+  
+  return borderMap;
+}
 
 // Функция, возвращающая позицию юнита на карте при старте игры
 export function getPosition(PlayerPosArr) {
@@ -117,14 +170,14 @@ export function getLockCellPlayer(unitsPositionOnMap, player) {
 }
 
 // Функция, определяющая как будет ходить выбранный юнит
-export function getMoveUnit(unitType, position) {
+export function getMoveUnit(unitType, position, callback, grid) {
   
   // все секции, по которым можно ходить юниту
   const move = [];
-  const leftZoneMap = [0,8,16,24,32,40,48,56];             // левая граница карты
-  const rightZoneMap = [7,15,23,31,39,47,55,63];           // правая граница карты
-  const topZoneMap = [0,1,2,3,4,5,6,7];                    // верхняя граница карты
-  const bottomZoneMap = [56,57,58,59,60,61,62,63];         // нижняя граница карты
+  const leftZoneMap = callback(grid).left;                 // левая граница карты
+  const rightZoneMap = callback(grid).right;               // правая граница карты
+  const topZoneMap = callback(grid).top;                   // верхняя граница карты
+  const bottomZoneMap = callback(grid).bottom;             // нижняя граница карты
   
   // начальное значение отклонения юнита по оси Х
   let x = 1;
@@ -200,15 +253,15 @@ export function getMoveUnit(unitType, position) {
 }
 
 // Функция, определяющая как будет атаковать выбранный юнит
-export function getAttackUnit(unitType, position) {
+export function getAttackUnit(unitType, position, callback, grid) {
   
   // все секции, по которым можно атаковать юниту
   const attack = [];
   const attackObj = new Set();
-  const leftZoneMap = [0,8,16,24,32,40,48,56];             // левая граница карты
-  const rightZoneMap = [7,15,23,31,39,47,55,63];           // правая граница карты
-  const topZoneMap = [0,1,2,3,4,5,6,7];                    // верхняя граница карты
-  const bottomZoneMap = [56,57,58,59,60,61,62,63];         // нижняя граница карты
+  const leftZoneMap = callback(grid).left;                 // левая граница карты
+  const rightZoneMap = callback(grid).right;               // правая граница карты
+  const topZoneMap = callback(grid).top;                   // верхняя граница карты
+  const bottomZoneMap = callback(grid).bottom;             // нижняя граница карты
 
   function getTarget(purposes, m = 8) {
     function getAttackCell(zoneMapX, zoneMapY, xy) {

@@ -1,7 +1,7 @@
 import GamePlay from './GamePlay';
 import themes from './themes';
 import cursors from './cursors';
-import {positionUnitsGamer, positionUnitsComputer, userPositionTeam, 
+import {mainGrid, positionUnitsGamer, positionUnitsComputer, getBorderMap, userPositionTeam, 
   computerPositionTeam, characterUser, characterComp, userTeam, 
   computerTeam, getPosition, getPositionArrUnits, getPositionUnitOnMap, 
   getUnionArr, getUnitsOnMap, getMoveUnit, getAttackUnit, getLockCell,
@@ -78,8 +78,8 @@ export default class GameController {
         if (a.position === this.selectedUnitPos) this.selectedUnit = this.unitsPositionOnMap[i].character;
       });
 
-      this.moveUnit = getMoveUnit(this.selectedUnit.type, this.selectedUnitPos);
-      this.attackUnit = getAttackUnit(this.selectedUnit.type, this.selectedUnitPos);
+      this.moveUnit = getMoveUnit(this.selectedUnit.type, this.selectedUnitPos, getBorderMap, mainGrid);
+      this.attackUnit = getAttackUnit(this.selectedUnit.type, this.selectedUnitPos, getBorderMap, mainGrid);
     } else if (findPositionUnitComp && typeof this.selectedUnitPos === 'object') {
       GamePlay.showError('Этот персонаж неиграбельный');
     }
@@ -95,8 +95,8 @@ export default class GameController {
           this.gamePlay.deselectCell(this.selectedUnitPos);
           this.gamePlay.selectCell(newPositionUnit);
           this.selectedUnitPos = newPositionUnit;
-          this.moveUnit = getMoveUnit(unit.type, this.selectedUnitPos);
-          this.attackUnit = getAttackUnit(unit.type, this.selectedUnitPos);
+          this.moveUnit = getMoveUnit(unit.type, this.selectedUnitPos, getBorderMap, mainGrid);
+          this.attackUnit = getAttackUnit(unit.type, this.selectedUnitPos, getBorderMap, mainGrid);
 
           const infoUnit = `\uD83C\uDF96${unit.level}\u2694${unit.attack}\uD83D\uDEE1${unit.defence}\u2764${unit.health}`;
           this.gamePlay.showCellTooltip(infoUnit, index);
