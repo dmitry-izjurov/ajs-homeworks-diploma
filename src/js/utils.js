@@ -170,14 +170,14 @@ export function getLockCellPlayer(unitsPositionOnMap, player) {
 }
 
 // Функция, определяющая как будет ходить выбранный юнит
-export function getMoveUnit(unitType, position, callback, grid) {
+export function getMoveUnit(unitType, position, zoneMapObj) {
   
   // все секции, по которым можно ходить юниту
   const move = [];
-  const leftZoneMap = callback(grid).left;                 // левая граница карты
-  const rightZoneMap = callback(grid).right;               // правая граница карты
-  const topZoneMap = callback(grid).top;                   // верхняя граница карты
-  const bottomZoneMap = callback(grid).bottom;             // нижняя граница карты
+  const leftZoneMap = zoneMapObj.left;                 // левая граница карты
+  const rightZoneMap = zoneMapObj.right;               // правая граница карты
+  const topZoneMap = zoneMapObj.top;                   // верхняя граница карты
+  const bottomZoneMap = zoneMapObj.bottom;             // нижняя граница карты
   
   // начальное значение отклонения юнита по оси Х
   let x = 1;
@@ -253,15 +253,15 @@ export function getMoveUnit(unitType, position, callback, grid) {
 }
 
 // Функция, определяющая как будет атаковать выбранный юнит
-export function getAttackUnit(unitType, position, callback, grid) {
+export function getAttackUnit(unitType, position, zoneMapObj) {
   
   // все секции, по которым можно атаковать юниту
   const attack = [];
   const attackObj = new Set();
-  const leftZoneMap = callback(grid).left;                 // левая граница карты
-  const rightZoneMap = callback(grid).right;               // правая граница карты
-  const topZoneMap = callback(grid).top;                   // верхняя граница карты
-  const bottomZoneMap = callback(grid).bottom;             // нижняя граница карты
+  const leftZoneMap = zoneMapObj.left;                 // левая граница карты
+  const rightZoneMap = zoneMapObj.right;               // правая граница карты
+  const topZoneMap = zoneMapObj.top;                   // верхняя граница карты
+  const bottomZoneMap = zoneMapObj.bottom;             // нижняя граница карты
 
   function getTarget(purposes, m = 8) {
     function getAttackCell(zoneMapX, zoneMapY, xy) {

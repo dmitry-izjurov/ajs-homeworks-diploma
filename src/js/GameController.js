@@ -11,35 +11,39 @@ export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.turn = 'user';                                                               // очередь ходить
-    this.selectedUnit = new Object();                                                 // выбран юнит
-    this.selectedUnitPos = new Number();                                              // выбран юнит по позиции на карте
-    this.unitsPositionOnMap = new Array();                                            // все юниты на карте
-    this.moveUnit = new Array();                                                      // Массив с клетками, по которым может ходить выбранный юнит
-    this.attackUnit = new Array();                                                    // Массив с клетками, по которым может атаковать выбранный юнит
-    this.level = 1;                                                                   // текущий уровень
-    this.unitsUser = 2;                                                               // осталось живых юнитов игрока
-    this.unitsComp = 2;                                                               // осталось живых юнитов компьютера
-    this.lockCell;                                                                    // Ячейки на карте, занятые юнитами
-    this.lockCellUser;                                                                // Ячейки на карте, занятые юнитами игрока
-    this.lockCellComp;                                                                // Ячейки на карте, занятые юнитами компьютера
-    this.lockCellCurrent;                                                             // Текущая заблокированная ячейка
-    this.lock = false;                                                                // игра остановлена
+    this.grid;                                                                         // размер поля боя NxN
+    this.zoneMapBorder;                                                                // границы карты
+    this.turn = 'user';                                                                // очередь ходить
+    this.selectedUnit = new Object();                                                  // выбран юнит
+    this.selectedUnitPos = new Number();                                               // выбран юнит по позиции на карте
+    this.unitsPositionOnMap = new Array();                                             // все юниты на карте
+    this.moveUnit = new Array();                                                       // Массив с клетками, по которым может ходить выбранный юнит
+    this.attackUnit = new Array();                                                     // Массив с клетками, по которым может атаковать выбранный юнит
+    this.level = 1;                                                                    // текущий уровень
+    this.unitsUser = 2;                                                                // осталось живых юнитов игрока
+    this.unitsComp = 2;                                                                // осталось живых юнитов компьютера
+    this.lockCell;                                                                     // Ячейки на карте, занятые юнитами
+    this.lockCellUser;                                                                 // Ячейки на карте, занятые юнитами игрока
+    this.lockCellComp;                                                                 // Ячейки на карте, занятые юнитами компьютера
+    this.lockCellCurrent;                                                              // Текущая заблокированная ячейка
+    this.lock = false;                                                                 // игра остановлена
   }
 
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
-    this.gamePlay.drawUi(themes.prairie);                                             // Задаем тему в начале игры
+    this.grid = mainGrid;                                                              // Определяем размер карты
+    this.zoneMapBorder = getBorderMap(this.grid);                                      // Определяем границы карты
+    this.gamePlay.drawUi(themes.prairie);                                              // Задаем тему в начале игры
 
-    getPositionArrUnits(userTeam, positionUnitsGamer, userPositionTeam);              // Вычисляем координаты юнитов игрока
-    getPositionArrUnits(computerTeam, positionUnitsComputer, computerPositionTeam);   // Вычисляем координаты юнитов компьютера
+    getPositionArrUnits(userTeam, positionUnitsGamer, userPositionTeam);               // Вычисляем координаты юнитов игрока
+    getPositionArrUnits(computerTeam, positionUnitsComputer, computerPositionTeam);    // Вычисляем координаты юнитов компьютера
     
     // Объединяем массивы всех юнитов и их позиций
-    const unionTeam = getUnionArr(userTeam, computerTeam);                            // общая команда
-    const unionPositionTeam = getUnionArr(userPositionTeam, computerPositionTeam);    // общие позиции
+    const unionTeam = getUnionArr(userTeam, computerTeam);                             // общая команда
+    const unionPositionTeam = getUnionArr(userPositionTeam, computerPositionTeam);     // общие позиции
     
-    this.unitsPositionOnMap = getUnitsOnMap(unionTeam, unionPositionTeam);            // Объекты PositionedCharacter
+    this.unitsPositionOnMap = getUnitsOnMap(unionTeam, unionPositionTeam);             // Объекты PositionedCharacter
     
     this.lockCell = getLockCell(this.unitsPositionOnMap);                              // Добавляем занятые ячейки
     this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');            // Добавляем занятые ячейки юнитами игрока
@@ -78,8 +82,8 @@ export default class GameController {
         if (a.position === this.selectedUnitPos) this.selectedUnit = this.unitsPositionOnMap[i].character;
       });
 
-      this.moveUnit = getMoveUnit(this.selectedUnit.type, this.selectedUnitPos, getBorderMap, mainGrid);
-      this.attackUnit = getAttackUnit(this.selectedUnit.type, this.selectedUnitPos, getBorderMap, mainGrid);
+      this.moveUnit = getMoveUnit(this.selectedUnit.type, this.selectedUnitPos, this.zoneMapBorder);
+      this.attackUnit = getAttackUnit(this.selectedUnit.type, this.selectedUnitPos, this.zoneMapBorder);
     } else if (findPositionUnitComp && typeof this.selectedUnitPos === 'object') {
       GamePlay.showError('Этот персонаж неиграбельный');
     }
@@ -95,8 +99,8 @@ export default class GameController {
           this.gamePlay.deselectCell(this.selectedUnitPos);
           this.gamePlay.selectCell(newPositionUnit);
           this.selectedUnitPos = newPositionUnit;
-          this.moveUnit = getMoveUnit(unit.type, this.selectedUnitPos, getBorderMap, mainGrid);
-          this.attackUnit = getAttackUnit(unit.type, this.selectedUnitPos, getBorderMap, mainGrid);
+          this.moveUnit = getMoveUnit(unit.type, this.selectedUnitPos, this.zoneMapBorder);
+          this.attackUnit = getAttackUnit(unit.type, this.selectedUnitPos, this.zoneMapBorder);
 
           const infoUnit = `\uD83C\uDF96${unit.level}\u2694${unit.attack}\uD83D\uDEE1${unit.defence}\u2764${unit.health}`;
           this.gamePlay.showCellTooltip(infoUnit, index);
