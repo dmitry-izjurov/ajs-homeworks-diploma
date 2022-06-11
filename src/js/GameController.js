@@ -1,3 +1,4 @@
+import Character from './Character';
 import GamePlay from './GamePlay';
 import themes from './themes';
 import cursors from './cursors';
@@ -5,7 +6,7 @@ import {mainGrid, positionUnitsGamer, positionUnitsComputer, getBorderMap, userP
   computerPositionTeam, characterUser, characterComp, userTeam, 
   computerTeam, getPosition, getPositionArrUnits, getPositionUnitOnMap, 
   getUnionArr, getUnitsOnMap, getMoveUnit, getAttackUnit, getLockCell,
-  getLockCellPlayer} from './utils';
+  getLockCellPlayer, getRemoveUnit} from './utils';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -26,6 +27,8 @@ export default class GameController {
     this.lockCellUser;                                                                 // Ячейки на карте, занятые юнитами игрока
     this.lockCellComp;                                                                 // Ячейки на карте, занятые юнитами компьютера
     this.lockCellCurrent;                                                              // Текущая заблокированная ячейка
+    this.targetDetected = false;                                                       // Цель для атаки обнаружена
+    this.attackedUnit;                                                                 // Атакуемый юнит
     this.lock = false;                                                                 // игра остановлена
   }
 
@@ -107,12 +110,27 @@ export default class GameController {
         }
       });
     }
-    this.gamePlay.redrawPositions(this.unitsPositionOnMap);
+    
+    if (this.targetDetected && this.attackedUnit.health > 0) {
+      const damage = Character.damage(this.selectedUnit.attack, this.attackedUnit.defence);
+      this.attackedUnit.health -= damage;
+
+      // Проверяем здоровье юнитов и отрисовываем карту
+      this.gamePlay.showDamage(index, damage)
+      .then(() => getRemoveUnit(this.unitsPositionOnMap))
+      .then(() => this.gamePlay.redrawPositions(this.unitsPositionOnMap))
+      .then(() => this.onCellLeave(index))
+      .then(() => this.onCellEnter(index));
+    } else {
+      this.gamePlay.redrawPositions(this.unitsPositionOnMap);
+    }
   }
 
   onCellEnter(index) {
     // TODO: react to mouse enter
     // Ищем позицию юнита в общей команде
+    this.targetDetected = false;                                                       // Сброс значения обнаруженной цели
+    let unit;                                                                          // Найденный юнит
     this.lockCell = getLockCell(this.unitsPositionOnMap);                              // Добавляем занятые ячейки
     this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');            // Добавляем занятые ячейки юнитами игрока
     this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');            // Добавляем занятые ячейки юнитами компьютера
@@ -124,9 +142,8 @@ export default class GameController {
     this.gamePlay.setCursor(cursors.auto);                                             // выбираем обычный курсор
     if (findPositionUnit || findPositionUnit === 0) {
       this.gamePlay.setCursor(cursors.pointer);                                        // выбираем курсор pointer
-      let unit;
       this.unitsPositionOnMap.forEach((a, i) => {
-        if (a.position === index) unit = this.unitsPositionOnMap[i].character;        // Найденный юнит
+        if (a.position === index) unit = this.unitsPositionOnMap[i].character;         
       });
 
       // Информация о юните
@@ -150,6 +167,8 @@ export default class GameController {
       } else if (indexAttackUnit === computerPositionTeam.find(a => a === index) && (indexAttackUnit || indexAttackUnit === 0)) {
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(indexAttackUnit, 'red');
+        this.targetDetected = true;
+        this.attackedUnit = unit;
       } else if (findPositionUnitUser || findPositionUnitUser === 0) {
         this.gamePlay.setCursor(cursors.pointer);
       } else {
@@ -160,6 +179,7 @@ export default class GameController {
 
   onCellLeave(index) {
     // TODO: react to mouse leave
+    this.attackedUnit = undefined;                                                     // Сброс значения атакуемого юнита
     const indexMoveUnit = this.moveUnit.find(a => a === index);
     const indexAttackUnit = this.attackUnit.find(a => a === index);
     this.gamePlay.hideCellTooltip(this.selectedUnitPos);                               // Удаляем подсказку

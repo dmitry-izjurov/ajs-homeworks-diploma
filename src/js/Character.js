@@ -20,4 +20,8 @@ export default class Character {
       this.health = 100;
     }
   }
+
+  static damage(attackerAttack, targetDefence) {
+    return Math.max(attackerAttack - targetDefence, attackerAttack * 0.1);
+  }
 }
