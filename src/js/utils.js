@@ -1,3 +1,4 @@
+import Character from './Character';
 import {unitsCls, userTeamCls, computerTeamCls} from './Characters/Units';
 import {generateTeam} from './generators';
 import PositionedCharacter from './PositionedCharacter';
@@ -334,14 +335,92 @@ export function getAttackUnit(unitType, position, zoneMapObj) {
 }
 
 // Функция, удаляющая юнита после его смерти из общего массива данных
-export function getRemoveUnit(units) {
+export function getRemoveUnit(units, userPositionTeamLockCell, computerPositionTeamLockCell, gamePlay, selectedUnitPos) {
   units.forEach((a, i) => {
     if (a.character.health <= 0) {
       units.splice(i, 1);
-      let index = userPositionTeam.findIndex(arg => arg === a.position);
-      userPositionTeam.splice(index, 1);
-      index = computerPositionTeam.findIndex(arg => arg === a.position);
-      computerPositionTeam.splice(index, 1);
+      let index = userPositionTeamLockCell.findIndex(arg => arg === a.position);
+      userPositionTeamLockCell.splice(index, 1);
+      if (index !== -1) gamePlay.deselectCell(selectedUnitPos);
+      index = computerPositionTeamLockCell.findIndex(arg => arg === a.position);
+      computerPositionTeamLockCell.splice(index, 1);
     }
   })
+}
+
+// Функция, реализующая стратегию атаки и перемещения компьютера
+export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellCallback, lockCellUserCallback, lockCellCompCallback,
+  character, gamePlay, selectedUnitPos) {
+  const unitsPositionOnMap = unitsPositionOnMapArr;
+  let lockCell = lockCellCallback;
+  let lockCellUser = lockCellUserCallback;
+  let lockCellComp = lockCellCompCallback;
+  const userTeam = [];                                          // команда игрока
+  const compTeam = [];                                          // команда компьютера
+  let indexAttackUnit;                                          // найденный юнит игрока для атаки
+  
+  unitsPositionOnMap.forEach((a,i) => {
+    if (characterUser.find(arg => arg === a.character.type)) {
+      userTeam.push({character: a.character, position: a.position});
+    }
+    if (characterComp.find(arg => arg === a.character.type)) {
+      compTeam.push({character: a.character, position: a.position});
+    }
+  });
+  
+  if (userTeam.length === 0 || compTeam.length === 0) {
+    return false;
+  }
+
+  // ищем юнита игрока для атаки
+  for (let i = 0; i < compTeam.length; i += 1) {
+    let attackUnit = getAttackUnit(compTeam[i].character.type, compTeam[i].position, getBorderMap(mainGrid));
+    
+    attackUnit.find(a => lockCellUser.forEach(arg => {
+      if (arg === a) {
+        indexAttackUnit = a;
+      }
+    }));
+    
+    if (indexAttackUnit) {
+      const findUnitUser = userTeam.find(a => a.position === indexAttackUnit);
+      const damage = character.damage(compTeam[i].character.attack, findUnitUser.character.defence);
+      findUnitUser.character.health -= damage;
+      gamePlay.showDamage(indexAttackUnit, damage)
+      .then(() => getRemoveUnit(unitsPositionOnMap, lockCellUser, lockCellComp, gamePlay, selectedUnitPos))
+      .then(() => gamePlay.redrawPositions(unitsPositionOnMap));
+      break;
+    }
+  }
+
+  // ищем юнита компьютера для движения
+  if (!indexAttackUnit) {
+    const unitIndex = Math.floor(Math.random() * compTeam.length);
+    let moveUnit = getMoveUnit(compTeam[unitIndex].character.type, compTeam[unitIndex].position, getBorderMap(mainGrid));
+    let indexMoveUnit = Math.floor(Math.random() * moveUnit.length); // выбранный индекс юнита
+    let findIndexMoveUnit = moveUnit[indexMoveUnit];                 // найденный индекс юнита
+    let matchingIndex = compTeam.filter(a => a.position === findIndexMoveUnit)
+    
+    if (matchingIndex.length > 0) {
+      moveUnit.forEach((a,i) => {
+        for (let b = 0; b < matchingIndex.length; b += 1) {
+          if (a === matchingIndex[b].position) {
+            moveUnit.splice(i,1)
+          }
+        }
+      });
+
+      indexMoveUnit = Math.floor(Math.random() * moveUnit.length);
+      findIndexMoveUnit = moveUnit[indexMoveUnit];
+    }
+
+    let findIndexUnit = unitsPositionOnMap.findIndex(a => a.position === compTeam[unitIndex].position);
+    unitsPositionOnMap[findIndexUnit].position = findIndexMoveUnit;
+    
+    // обновляем данные
+    lockCell = getLockCell(unitsPositionOnMap);
+    lockCellUser = getLockCellPlayer(unitsPositionOnMap, 'user');
+    lockCellComp = getLockCellPlayer(unitsPositionOnMap, 'comp');
+    gamePlay.redrawPositions(unitsPositionOnMap);
+  }
 }
