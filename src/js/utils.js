@@ -339,9 +339,10 @@ export function getRemoveUnit(units, userPositionTeamLockCell, computerPositionT
   units.forEach((a, i) => {
     if (a.character.health <= 0) {
       units.splice(i, 1);
+      let userPosition = userPositionTeamLockCell.find(arg => arg === a.position);
       let index = userPositionTeamLockCell.findIndex(arg => arg === a.position);
       userPositionTeamLockCell.splice(index, 1);
-      if (index !== -1) gamePlay.deselectCell(selectedUnitPos);
+      if (index !== -1 && userPosition === selectedUnitPos) gamePlay.deselectCell(selectedUnitPos);
       index = computerPositionTeamLockCell.findIndex(arg => arg === a.position);
       computerPositionTeamLockCell.splice(index, 1);
     }
@@ -349,12 +350,9 @@ export function getRemoveUnit(units, userPositionTeamLockCell, computerPositionT
 }
 
 // Функция, реализующая стратегию атаки и перемещения компьютера
-export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellCallback, lockCellUserCallback, lockCellCompCallback,
+export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellUser, lockCellComp,
   character, gamePlay, selectedUnitPos) {
   const unitsPositionOnMap = unitsPositionOnMapArr;
-  let lockCell = lockCellCallback;
-  let lockCellUser = lockCellUserCallback;
-  let lockCellComp = lockCellCompCallback;
   const userTeam = [];                                          // команда игрока
   const compTeam = [];                                          // команда компьютера
   let indexAttackUnit;                                          // найденный юнит игрока для атаки
@@ -416,11 +414,6 @@ export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellCallback, l
 
     let findIndexUnit = unitsPositionOnMap.findIndex(a => a.position === compTeam[unitIndex].position);
     unitsPositionOnMap[findIndexUnit].position = findIndexMoveUnit;
-    
-    // обновляем данные
-    lockCell = getLockCell(unitsPositionOnMap);
-    lockCellUser = getLockCellPlayer(unitsPositionOnMap, 'user');
-    lockCellComp = getLockCellPlayer(unitsPositionOnMap, 'comp');
     gamePlay.redrawPositions(unitsPositionOnMap);
   }
 }

@@ -14,6 +14,7 @@ export default class GameController {
     this.stateService = stateService;
     this.grid;                                                                         // размер поля боя NxN
     this.zoneMapBorder;                                                                // границы карты
+    this.clickedCeil;                                                                  // кликнутая ячейка
     // this.turn = 'user';                                                                // очередь ходить
     this.selectedUnit = new Object();                                                  // выбран юнит
     this.selectedUnitPos = new Number();                                               // выбран юнит по позиции на карте
@@ -121,7 +122,7 @@ export default class GameController {
           this.gamePlay.redrawPositions(this.unitsPositionOnMap);
           // this.turn = 'comp';
           new Promise((resolve) => {
-            resolve(getAttackStrategyComp(this.unitsPositionOnMap, this.lockCell, this.lockCellUser, this.lockCellComp, Character, this.gamePlay, this.selectedUnitPos))
+            resolve(getAttackStrategyComp(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, Character, this.gamePlay, this.selectedUnitPos))
           })
           .then(() => {
             if (this.selectedUnit.health <= 0) {
@@ -150,7 +151,7 @@ export default class GameController {
       this.gamePlay.showDamage(index, damage)
       .then(() => getRemoveUnit(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, this.gamePlay, this.selectedUnitPos))
       .then(() => this.gamePlay.redrawPositions(this.unitsPositionOnMap))
-      .then(() => getAttackStrategyComp(this.unitsPositionOnMap, this.lockCell, this.lockCellUser, this.lockCellComp, Character, this.gamePlay, this.selectedUnitPos))
+      .then(() => getAttackStrategyComp(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, Character, this.gamePlay, this.selectedUnitPos))
       .then(() => {
         if (this.selectedUnit.health <= 0) {
           this.selectedUnit = new Object();
@@ -213,6 +214,10 @@ export default class GameController {
         this.gamePlay.selectCell(indexMoveUnit, 'green');
         this.gamePlay.setCursor(cursors.pointer);
       } else if (indexAttackUnit === this.lockCellComp.find(a => a === index) && (indexAttackUnit || indexAttackUnit === 0)) {
+        if (this.clickedCeil) {
+          this.gamePlay.deselectCell(this.clickedCeil);
+        }
+        this.clickedCeil = index;
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(indexAttackUnit, 'red');
         this.targetDetected = true;
@@ -230,7 +235,8 @@ export default class GameController {
     this.attackedUnit = undefined;                                                     // Сброс значения атакуемого юнита
     const indexMoveUnit = this.moveUnit.find(a => a === index);
     const indexAttackUnit = this.attackUnit.find(a => a === index);
-    this.gamePlay.hideCellTooltip(this.selectedUnitPos);                               // Удаляем подсказку
+    this.gamePlay.hideCellTooltip(index);                                              // Удаляем подсказку
+    
     if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexMoveUnit || indexMoveUnit === 0)) {
       this.gamePlay.deselectCell(indexMoveUnit);
     }
