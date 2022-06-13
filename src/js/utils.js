@@ -399,7 +399,7 @@ export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellCallback, l
     let moveUnit = getMoveUnit(compTeam[unitIndex].character.type, compTeam[unitIndex].position, getBorderMap(mainGrid));
     let indexMoveUnit = Math.floor(Math.random() * moveUnit.length); // выбранный индекс юнита
     let findIndexMoveUnit = moveUnit[indexMoveUnit];                 // найденный индекс юнита
-    let matchingIndex = compTeam.filter(a => a.position === findIndexMoveUnit)
+    let matchingIndex = unitsPositionOnMap.filter(a => a.position === findIndexMoveUnit)
     
     if (matchingIndex.length > 0) {
       moveUnit.forEach((a,i) => {
