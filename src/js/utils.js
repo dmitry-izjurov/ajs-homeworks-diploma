@@ -380,7 +380,7 @@ export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellUser, lockC
       }
     }));
     
-    if (indexAttackUnit) {
+    if (indexAttackUnit || indexAttackUnit === 0) {
       const findUnitUser = userTeam.find(a => a.position === indexAttackUnit);
       const damage = character.damage(compTeam[i].character.attack, findUnitUser.character.defence);
       findUnitUser.character.health -= damage;
@@ -392,7 +392,7 @@ export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellUser, lockC
   }
 
   // ищем юнита компьютера для движения
-  if (!indexAttackUnit) {
+  if (!indexAttackUnit && indexAttackUnit !== 0) {
     const unitIndex = Math.floor(Math.random() * compTeam.length);
     let moveUnit = getMoveUnit(compTeam[unitIndex].character.type, compTeam[unitIndex].position, getBorderMap(mainGrid));
     let indexMoveUnit = Math.floor(Math.random() * moveUnit.length); // выбранный индекс юнита
