@@ -337,13 +337,21 @@ export function getAttackUnit(unitType, position, zoneMapObj) {
 // Функция, удаляющая юнита после его смерти из общего массива данных
 export function getRemoveUnit(units, userPositionTeamLockCell, computerPositionTeamLockCell, gamePlay, selectedUnitPos) {
   units.forEach((a, i) => {
-    if (a.character.health <= 0) {
+    // проверяем юнитов игрока
+    if (a.character.health <= 0 && (a.character.type === 'swordsman' || a.character.type === 'bowman'
+    || a.character.type === 'magician')) {
       units.splice(i, 1);
       let userPosition = userPositionTeamLockCell.find(arg => arg === a.position);
       let index = userPositionTeamLockCell.findIndex(arg => arg === a.position);
       userPositionTeamLockCell.splice(index, 1);
       if (index !== -1 && userPosition === selectedUnitPos) gamePlay.deselectCell(selectedUnitPos);
-      index = computerPositionTeamLockCell.findIndex(arg => arg === a.position);
+    }
+
+    // проверяем юнитов компьютера
+    if (a.character.health <= 0 && (a.character.type === 'undead' || a.character.type === 'vampire'
+    || a.character.type === 'daemon')) {
+      units.splice(i, 1);
+      let index = computerPositionTeamLockCell.findIndex(arg => arg === a.position);
       computerPositionTeamLockCell.splice(index, 1);
     }
   })
@@ -351,11 +359,12 @@ export function getRemoveUnit(units, userPositionTeamLockCell, computerPositionT
 
 // Функция, реализующая стратегию атаки и перемещения компьютера
 export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellUser, lockCellComp,
-  character, gamePlay, selectedUnitPos) {
+  character, gamePlay, selectedUnitPos, level, score) {
   const unitsPositionOnMap = unitsPositionOnMapArr;
   const userTeam = [];                                          // команда игрока
   const compTeam = [];                                          // команда компьютера
   let indexAttackUnit;                                          // найденный юнит игрока для атаки
+  let damage = 0;                                               // урон, который получает юнит игрока
   
   unitsPositionOnMap.forEach((a,i) => {
     if (characterUser.find(arg => arg === a.character.type)) {
@@ -382,11 +391,14 @@ export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellUser, lockC
     
     if (indexAttackUnit || indexAttackUnit === 0) {
       const findUnitUser = userTeam.find(a => a.position === indexAttackUnit);
-      const damage = character.damage(compTeam[i].character.attack, findUnitUser.character.defence);
+      damage = character.damage(compTeam[i].character.attack, findUnitUser.character.defence);
       findUnitUser.character.health -= damage;
       gamePlay.showDamage(indexAttackUnit, damage)
-      .then(() => getRemoveUnit(unitsPositionOnMap, lockCellUser, lockCellComp, gamePlay, selectedUnitPos))
-      .then(() => gamePlay.redrawPositions(unitsPositionOnMap));
+      .then(() => {
+        getRemoveUnit(unitsPositionOnMap, lockCellUser, lockCellComp, gamePlay, selectedUnitPos);
+        getWinner(lockCellUser, lockCellComp, level, score);
+        gamePlay.redrawPositions(unitsPositionOnMap);
+      });
       break;
     }
   }
@@ -416,4 +428,48 @@ export function getAttackStrategyComp(unitsPositionOnMapArr, lockCellUser, lockC
     unitsPositionOnMap[findIndexUnit].position = findIndexMoveUnit;
     gamePlay.redrawPositions(unitsPositionOnMap);
   }
+  return damage;
+}
+
+// Функция, которая проверяет победителя
+export function getWinner(lockCellUser, lockCellComp, level, score, scoreTotal) {
+  if (lockCellUser.length === 0) {
+    alert('Game over');
+  }
+
+  if (lockCellComp.length === 0 && level !== 4) {
+    const congratulationText = function(level, score, total) {
+      return `Поздравляем! Вы прошли ${level} уровень и набрали ${score} очков! Всего набрано ${total} очков`
+    }
+    if (scoreTotal === 0) {
+      alert(congratulationText(level, score, score));
+    } else {
+      alert(congratulationText(level, score, score + scoreTotal));
+    }
+    return {winner: true, score: score};
+  } else if (lockCellComp.length === 0 && level === 4) {
+    alert(`Поздравляем! Вы прошли игру и набрали ${score} очков за последнюю битву! Всего набрано очков ${score + scoreTotal}`)
+  }
+}
+
+// Функция, которая вычисляет позиции юнитов на новом уровне
+export function getNewUnitsPositionOnMap(generateTeam, userTeamCls, maxLevelUser, characterCount,
+  getUnionArr, oldUserTeam,
+  computerTeamCls, maxLevelComp) {
+  const newUnitsUser = generateTeam(userTeamCls, maxLevelUser, characterCount);
+  const newUserTeam = getUnionArr(oldUserTeam, newUnitsUser);                               // новая команда игрока
+  const newComputerTeam = generateTeam(computerTeamCls, maxLevelComp, newUserTeam.length);  // новая команда компьютера
+
+  const newUserPositionTeam = [];
+  const newComputerPositionTeam = [];
+  
+  getPositionArrUnits(newUserTeam, positionUnitsGamer, newUserPositionTeam);                // Вычисляем координаты юнитов игрока
+  getPositionArrUnits(newComputerTeam, positionUnitsComputer, newComputerPositionTeam);     // Вычисляем координаты юнитов компьютера
+
+  
+  // // Объединяем массивы всех юнитов и их позиций
+  const newUnionTeam = getUnionArr(newUserTeam, newComputerTeam);                           // общая команда
+  const unionPositionTeam = getUnionArr(newUserPositionTeam, newComputerPositionTeam);      // общие позиции
+
+  return getUnitsOnMap(newUnionTeam, unionPositionTeam);                                    // Объекты PositionedCharacter
 }

@@ -2,11 +2,13 @@ import Character from './Character';
 import GamePlay from './GamePlay';
 import themes from './themes';
 import cursors from './cursors';
+import {generateTeam} from './generators';
+import {unitsCls, userTeamCls, computerTeamCls} from './Characters/Units';
 import {mainGrid, positionUnitsGamer, positionUnitsComputer, getBorderMap, userPositionTeam, 
   computerPositionTeam, characterUser, characterComp, userTeam, 
   computerTeam, getPosition, getPositionArrUnits, getPositionUnitOnMap, 
   getUnionArr, getUnitsOnMap, getMoveUnit, getAttackUnit, getLockCell,
-  getLockCellPlayer, getRemoveUnit, getAttackStrategyComp} from './utils';
+  getLockCellPlayer, getRemoveUnit, getAttackStrategyComp, getWinner, getNewUnitsPositionOnMap} from './utils';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -27,14 +29,25 @@ export default class GameController {
     this.lockCellCurrent;                                                              // Текущая заблокированная ячейка
     this.targetDetected = false;                                                       // Цель для атаки обнаружена
     this.attackedUnit;                                                                 // Атакуемый юнит
+    this.score = 0;                                                                    // количество набранных очков
+    this.scoreTotal = 0;                                                               // количество набранных очков за игру
     this.lock = false;                                                                 // игра остановлена
+    this.grid = mainGrid;                                                              // Определяем размер карты
+    this.zoneMapBorder = getBorderMap(this.grid);                                      // Определяем границы карты
+    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));                   // Ставим обработчик на вход в ячейку
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));                   // Ставим обработчик на клик по ячейке
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));                   // Ставим обработчик на выход из ячейки
+    this.lockCellUpdate = function() {                                                 // Функция, которая обновляет данные по занятым ячейкам
+      this.lockCell = getLockCell(this.unitsPositionOnMap);                            // Добавляем занятые ячейки
+      this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');          // Добавляем занятые ячейки юнитами игрока
+      this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');          // Добавляем занятые ячейки юнитами компьютера
+    }
   }
 
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
-    this.grid = mainGrid;                                                              // Определяем размер карты
-    this.zoneMapBorder = getBorderMap(this.grid);                                      // Определяем границы карты
+    
     this.gamePlay.drawUi(themes.prairie);                                              // Задаем тему в начале игры
 
     getPositionArrUnits(userTeam, positionUnitsGamer, userPositionTeam);               // Вычисляем координаты юнитов игрока
@@ -46,26 +59,20 @@ export default class GameController {
     
     this.unitsPositionOnMap = getUnitsOnMap(unionTeam, unionPositionTeam);             // Объекты PositionedCharacter
     
-    this.lockCell = getLockCell(this.unitsPositionOnMap);                              // Добавляем занятые ячейки
-    this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');            // Добавляем занятые ячейки юнитами игрока
-    this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');            // Добавляем занятые ячейки юнитами компьютера
+    this.lockCellUpdate();                                                             // Обновляем данные
     this.gamePlay.redrawPositions(this.unitsPositionOnMap);                            // Рисуем юнитов на карте
-    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
-    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
-    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
   }
 
   onCellClick(index) {
+    if (!this.lock) {
+      
     // TODO: react to click
     if (this.turn === 'comp') {
       this.turn = 'user';
       return alert('Компьютер не успевает за Вами!');
     };
     
-    // обновляем данные
-    this.lockCell = getLockCell(this.unitsPositionOnMap);
-    this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');
-    this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');
+    this.lockCellUpdate();
     let findPositionUnitUser;                                                          // Позиция юнита игрока
     let findPositionUnitComp;                                                          // Позиция юнита компьютера
     
@@ -111,33 +118,28 @@ export default class GameController {
 
           const infoUnit = `\uD83C\uDF96${unit.level}\u2694${unit.attack}\uD83D\uDEE1${unit.defence}\u2764${unit.health}`;
           this.gamePlay.showCellTooltip(infoUnit, index);
-
-          // обновляем данные
-          this.lockCell = getLockCell(this.unitsPositionOnMap);
-          this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');
-          this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');
+          this.lockCellUpdate();
           
           // ходит компьютер
           this.gamePlay.redrawPositions(this.unitsPositionOnMap);
           this.turn = 'comp';
-          new Promise((resolve) => {
-            resolve(getAttackStrategyComp(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, Character, this.gamePlay, this.selectedUnitPos))
-          })
-          .then(() => {
-            if (this.selectedUnit.health <= 0) {
-              this.selectedUnit = new Object();
-              this.selectedUnitPos = new Number();
-              this.moveUnit = new Array();
-              this.attackUnit = new Array();
-              this.gamePlay.deselectCell(index);
-            }
-          })
-          .then(() => this.turn = 'user');
+          
+          this.score -= getAttackStrategyComp(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, 
+            Character, this.gamePlay, this.selectedUnitPos, this.level, this.score);
+          
+          
+          setTimeout(() => {
+            if (this.lockCellUser.length === 0) this.lock = true;
+          }, 1000);
 
-          // обновляем данные
-          this.lockCell = getLockCell(this.unitsPositionOnMap);
-          this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');
-          this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');
+          if (this.selectedUnit.health <= 0) {
+            this.selectedUnit = new Object();
+            this.selectedUnitPos = new Number();
+            this.moveUnit = new Array();
+            this.attackUnit = new Array();
+            this.gamePlay.deselectCell(index);
+          }
+          this.turn = 'user';
         }
       });
     }
@@ -148,11 +150,15 @@ export default class GameController {
       const damage = Character.damage(this.selectedUnit.attack, this.attackedUnit.defence);
       this.attackedUnit.health -= damage;
       this.gamePlay.showDamage(index, damage)
-      .then(() => getRemoveUnit(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, this.gamePlay, this.selectedUnitPos))
-      .then(() => this.gamePlay.redrawPositions(this.unitsPositionOnMap))
-      .then(() => getAttackStrategyComp(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, Character, this.gamePlay, this.selectedUnitPos))
       .then(() => {
-        let clearCeil;                                                            // Ячейка, которая будет очищена, если компьютер сменит позицию
+        getRemoveUnit(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, this.gamePlay, this.selectedUnitPos);
+        this.gamePlay.redrawPositions(this.unitsPositionOnMap);
+        this.score += damage;
+        this.score -= getAttackStrategyComp(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, 
+          Character, this.gamePlay, this.selectedUnitPos, this.level, this.score);
+        
+        // Ячейка, которая будет очищена, если компьютер сменит позицию
+        let clearCeil;                                                                
         this.unitsPositionOnMap.forEach((a, i) => {
           if (a.position === index) clearCeil = this.unitsPositionOnMap[i].position;      
         });
@@ -160,37 +166,82 @@ export default class GameController {
           this.gamePlay.deselectCell(index);
           this.gamePlay.hideCellTooltip(index);
         }
-      })
-      .then(() => {
         if (this.selectedUnit.health <= 0) {
           this.selectedUnit = new Object();
           this.selectedUnitPos = new Number();
           this.moveUnit = new Array();
           this.attackUnit = new Array();
-          if (this.lockCellCurrent) {
-            this.gamePlay.deselectCell(this.lockCellCurrent);
+          if (index) {
+            this.gamePlay.deselectCell(index);
           }
         }
-      })
-      .then(() => this.turn = 'user');
-      
-      // обновляем данные
-      this.lockCell = getLockCell(this.unitsPositionOnMap);
-      this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');
-      this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');
+        this.turn = 'user';
+        
+        // Повышаем уровень
+        let levelNew = getWinner(this.lockCellUser, this.lockCellComp, this.level, this.score, this.scoreTotal);
+        if (typeof levelNew === 'object') {
+          if (levelNew.winner) {
+            this.selectedUnit = new Object();
+            this.selectedUnitPos = new Number();
+            this.moveUnit = new Array();
+            this.attackUnit = new Array();
+            this.gamePlay.deselectCell(index);
+            this.scoreTotal += levelNew.score;
+            let oldUserTeam = [];                                                                  // уцелевшие юниты игрока
+            this.unitsPositionOnMap.forEach((a,i) => {
+              a.character.levelUp();
+              oldUserTeam.push(a.character);
+            });
+            this.level += 1;
+
+            if (this.level === 2) {
+              this.gamePlay.drawUi(themes.desert);
+              this.unitsPositionOnMap = getNewUnitsPositionOnMap(generateTeam, userTeamCls, 2, 1,
+                getUnionArr, oldUserTeam, computerTeamCls, 2);
+              this.lockCellUpdate();
+              this.gamePlay.redrawPositions(this.unitsPositionOnMap);
+            }
+
+            if (this.level === 3) {
+              this.gamePlay.drawUi(themes.arctic);
+              this.unitsPositionOnMap = getNewUnitsPositionOnMap(generateTeam, userTeamCls, 2, 2,
+                getUnionArr, oldUserTeam, computerTeamCls, 3);
+              this.lockCellUpdate();
+              this.gamePlay.redrawPositions(this.unitsPositionOnMap);
+            }
+
+            if (this.level === 4) {
+              this.gamePlay.drawUi(themes.mountain);
+              this.unitsPositionOnMap = getNewUnitsPositionOnMap(generateTeam, userTeamCls, 3, 2,
+                getUnionArr, oldUserTeam, computerTeamCls, 4);
+              this.lockCellUpdate();
+              this.gamePlay.redrawPositions(this.unitsPositionOnMap);
+            }
+          }
+        }
+
+        if (this.level === 4 && this.lockCellComp.length === 0) {
+            this.lock = true;
+            this.gamePlay.deselectCell(index);
+            this.gamePlay.deselectCell(this.selectedUnitPos);
+            this.gamePlay.setCursor(cursors.auto);
+            this.selectedUnit = new Object();
+            this.selectedUnitPos = new Number();
+            this.moveUnit = new Array();
+            this.attackUnit = new Array();
+        }
+      });
+    }
     }
   }
 
   onCellEnter(index) {
     // TODO: react to mouse enter
-    // Ищем позицию юнита в общей команде
+    if (!this.lock) {
+      // Ищем позицию юнита в общей команде
     this.targetDetected = false;                                                       // Сброс значения обнаруженной цели
     let unit;                                                                          // Найденный юнит
-    
-    // обновляем данные
-    this.lockCell = getLockCell(this.unitsPositionOnMap);
-    this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');
-    this.lockCellComp = getLockCellPlayer(this.unitsPositionOnMap, 'comp');
+    this.lockCellUpdate();
     
     let findPositionUnit;
     this.unitsPositionOnMap.forEach((a, i) => {
@@ -233,21 +284,24 @@ export default class GameController {
         this.gamePlay.setCursor(cursors.notallowed);
       }
     }
+    }
   }
 
   onCellLeave(index) {
     // TODO: react to mouse leave
-    this.attackedUnit = undefined;                                                     // Сброс значения атакуемого юнита
-    const indexMoveUnit = this.moveUnit.find(a => a === index);
-    const indexAttackUnit = this.attackUnit.find(a => a === index);
-    this.gamePlay.hideCellTooltip(index);                                              // Удаляем подсказку
+    if (!this.lock) {
+      this.attackedUnit = undefined;                                                     // Сброс значения атакуемого юнита
+      const indexMoveUnit = this.moveUnit.find(a => a === index);
+      const indexAttackUnit = this.attackUnit.find(a => a === index);
+      this.gamePlay.hideCellTooltip(index);                                              // Удаляем подсказку
     
-    if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexMoveUnit || indexMoveUnit === 0)) {
-      this.gamePlay.deselectCell(indexMoveUnit);
-    }
+      if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexMoveUnit || indexMoveUnit === 0)) {
+        this.gamePlay.deselectCell(indexMoveUnit);
+      }
 
-    if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexAttackUnit || indexAttackUnit === 0)) {
-      this.gamePlay.deselectCell(indexAttackUnit);
+      if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexAttackUnit || indexAttackUnit === 0)) {
+        this.gamePlay.deselectCell(indexAttackUnit);
+      }
     }
   }
 }

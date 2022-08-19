@@ -5,10 +5,10 @@
  * @param maxLevel max character level
  * @returns Character type children (ex. Magician, Bowman, etc)
  */
-export function* characterGenerator(allowedTypes, maxLevel) {
+export function* characterGenerator(allowedTypes, maxLevel, characterCount) {
   // TODO: write logic here
   let current = 0;
-  const last = allowedTypes.length - 1;
+  const last = characterCount - 1;
 
   while (current <= last) {
     const index = Math.floor(Math.random() * allowedTypes.length);
@@ -20,7 +20,7 @@ export function* characterGenerator(allowedTypes, maxLevel) {
 
 export function generateTeam(allowedTypes, maxLevel, characterCount) {
   // TODO: write logic here
-  const unit = characterGenerator(allowedTypes, maxLevel);
+  const unit = characterGenerator(allowedTypes, maxLevel, characterCount);
   const team = [];
 
   for (let i = 0; i < characterCount; i += 1) {

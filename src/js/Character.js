@@ -2,7 +2,7 @@ export default class Character {
   constructor(level, type = 'generic') {
     this.level = level;
     this.type = type;
-    this.health = 100;
+    this.health = 5;
         
     // TODO: throw error if user use "new Character()"
     if (new.target.name === 'Character') {
@@ -10,7 +10,7 @@ export default class Character {
     }
   }
 
-  static levelUp() {
+  levelUp() {
     this.level += 1;
     this.attack = Math.max(this.attack, this.attack * (1.8 - this.health) / 100);
     this.defence = Math.max(this.defence, this.defence * (1.8 - this.health) / 100);
