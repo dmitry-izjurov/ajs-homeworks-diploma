@@ -2,7 +2,7 @@ export default class Character {
   constructor(level, type = 'generic') {
     this.level = level;
     this.type = type;
-    this.health = 5;
+    this.health = 100;
         
     // TODO: throw error if user use "new Character()"
     if (new.target.name === 'Character') {

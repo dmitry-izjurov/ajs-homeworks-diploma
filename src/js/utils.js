@@ -1,5 +1,5 @@
-import Character from './Character';
-import {unitsCls, userTeamCls, computerTeamCls} from './Characters/Units';
+
+import {userTeamCls, computerTeamCls} from './Characters/Units';
 import {generateTeam} from './generators';
 import PositionedCharacter from './PositionedCharacter';
 

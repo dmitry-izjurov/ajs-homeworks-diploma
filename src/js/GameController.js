@@ -1,4 +1,5 @@
 import Character from './Character';
+import GameState from './GameState';
 import GamePlay from './GamePlay';
 import themes from './themes';
 import cursors from './cursors';
@@ -37,6 +38,9 @@ export default class GameController {
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));                   // Ставим обработчик на вход в ячейку
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));                   // Ставим обработчик на клик по ячейке
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));                   // Ставим обработчик на выход из ячейки
+    this.gamePlay.addNewGameListener(this.onNewGame.bind(this));                       // Начинаем Новую игру
+    this.gamePlay.addSaveGameListener(this.onSaveGame.bind(this));                     // Сохраняем игру
+    this.gamePlay.addLoadGameListener(this.onLoadGame.bind(this));                     // Загружаем игру
     this.lockCellUpdate = function() {                                                 // Функция, которая обновляет данные по занятым ячейкам
       this.lockCell = getLockCell(this.unitsPositionOnMap);                            // Добавляем занятые ячейки
       this.lockCellUser = getLockCellPlayer(this.unitsPositionOnMap, 'user');          // Добавляем занятые ячейки юнитами игрока
@@ -129,7 +133,16 @@ export default class GameController {
           
           
           setTimeout(() => {
-            if (this.lockCellUser.length === 0) this.lock = true;
+            if (this.lockCellUser.length === 0) {
+              this.lock = true;
+              this.gamePlay.deselectCell(index);
+              this.gamePlay.deselectCell(this.selectedUnitPos);
+              this.gamePlay.setCursor(cursors.auto);
+              this.selectedUnit = new Object();
+              this.selectedUnitPos = new Number();
+              this.moveUnit = new Array();
+              this.attackUnit = new Array();
+            };
           }, 1000);
 
           if (this.selectedUnit.health <= 0) {
@@ -302,6 +315,103 @@ export default class GameController {
       if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexAttackUnit || indexAttackUnit === 0)) {
         this.gamePlay.deselectCell(indexAttackUnit);
       }
+    }
+  }
+
+  onNewGame() {
+    const status = {
+      type: 'new Game',
+      maxLevel: this.level,
+      scoreTotal: this.scoreTotal,
+    };
+    GameState.from(status);
+    
+    this.turn = 'user';
+    this.selectedUnit = new Object();
+    this.selectedUnitPos = new Number();
+    this.moveUnit = new Array();
+    this.attackUnit = new Array();
+    this.level = 1;
+    this.lockCell = undefined;
+    this.lockCellUser = undefined;
+    this.lockCellComp = undefined;
+    this.lockCellCurrent = undefined;
+    this.targetDetected = false;
+    this.attackedUnit = undefined;
+    this.score = 0;
+    this.scoreTotal = 0;
+    this.lock = false;
+    let oldUserTeam = [];
+    this.gamePlay.drawUi(themes.prairie);
+    this.unitsPositionOnMap = getNewUnitsPositionOnMap(generateTeam, userTeamCls, 2, 2,
+      getUnionArr, oldUserTeam, computerTeamCls, 2);
+    this.lockCellUpdate();
+    this.gamePlay.redrawPositions(this.unitsPositionOnMap);
+  }
+
+  onSaveGame() {
+    let theme;
+    if (this.level === 1)  theme = themes.prairie; 
+    if (this.level === 2)  theme = themes.desert; 
+    if (this.level === 3)  theme = themes.arctic; 
+    if (this.level === 4)  theme = themes.mountain; 
+    
+    const status = {
+      turn: this.turn,
+      selectedUnit: this.selectedUnit,
+      selectedUnitPos: this.selectedUnitPos,
+      moveUnit: this.moveUnit,
+      attackUnit: this.attackUnit,
+      level: this.level,
+      lockCell: this.lockCell,
+      lockCellUser: this.lockCellUser,
+      lockCellComp: this.lockCellComp,
+      lockCellCurrent: this.lockCellCurrent,
+      targetDetected: this.targetDetected,
+      attackedUnit: this.attackedUnit,
+      score: this.score,
+      scoreTotal: this.scoreTotal,
+      theme: theme,
+      unitsPositionOnMap: this.unitsPositionOnMap
+    };
+    
+    this.stateService.save(GameState.from(status));
+    alert('Игра сохранена');
+  }
+
+  onLoadGame() {
+    const load = this.stateService.load();
+    if (load) {
+      this.turn = load.turn;
+      this.selectedUnit = load.selectedUnit;
+      this.selectedUnitPos = load.selectedUnitPos;
+      this.moveUnit = load.moveUnit;
+      this.attackUnit = load.attackUnit;
+      this.level = load.level;
+      this.lockCell = load.lockCell;
+      this.lockCellUser = load.lockCellUser;
+      this.lockCellComp = load.lockCellComp;
+      this.lockCellCurrent = load.lockCellCurrent;
+      this.targetDetected = load.targetDetected;
+      this.attackedUnit = load.attackedUnit;
+      this.score = load.score;
+      this.scoreTotal = load.scoreTotal;
+      this.gamePlay.drawUi(load.theme);
+
+      const newUnitsPositionOnMapArr = [];
+      const unitsPositionOnMapObj = load.unitsPositionOnMap;
+      const positions = [];
+      unitsPositionOnMapObj.forEach(a => {
+        const unit = unitsCls.find(u => u.name.toLowerCase() === a.character.type);
+        if (unit) newUnitsPositionOnMapArr.push(new unit);
+        positions.push(a.position);
+      });
+
+      this.unitsPositionOnMap = getUnitsOnMap(newUnitsPositionOnMapArr, positions);
+      this.unitsPositionOnMap.forEach((arg,i) => arg.character.health = unitsPositionOnMapObj[i].character.health);
+      
+      this.gamePlay.selectCell(this.selectedUnitPos);
+      this.gamePlay.redrawPositions(this.unitsPositionOnMap);
     }
   }
 }
