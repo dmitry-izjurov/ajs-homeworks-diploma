@@ -5,7 +5,6 @@ export default class GameState {
       const newGames = [];
       if (object.type === 'new Game') {
         newGames.push(object);
-        console.log(newGames);
       }
       return object;
     }
