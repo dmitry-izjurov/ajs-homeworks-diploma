@@ -26,6 +26,6 @@ export function generateTeam(allowedTypes, maxLevel, characterCount) {
   for (let i = 0; i < characterCount; i += 1) {
     team.push(unit.next().value);
   }
-  
+
   return team;
 }
