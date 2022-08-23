@@ -16,7 +16,7 @@ export default class GameController {
     this.stateService = stateService;
     this.turn = 'user';                                                                // очередь ходить
     this.selectedUnit = new Object();                                                  // выбран юнит
-    this.selectedUnitPos = new Number();                                               // выбран юнит по позиции на карте
+    this.selectedUnitPos = undefined;                                               // выбран юнит по позиции на карте
     this.unitsPositionOnMap = new Array();                                             // все юниты на карте
     this.moveUnit = new Array();                                                       // Массив с клетками, по которым может ходить выбранный юнит
     this.attackUnit = new Array();                                                     // Массив с клетками, по которым может атаковать выбранный юнит
@@ -59,7 +59,6 @@ export default class GameController {
     const unionPositionTeam = getUnionArr(userPositionTeam, computerPositionTeam);     // общие позиции
     
     this.unitsPositionOnMap = getUnitsOnMap(unionTeam, unionPositionTeam);             // Объекты PositionedCharacter
-    
     this.lockCellUpdate();                                                             // Обновляем данные
     this.gamePlay.redrawPositions(this.unitsPositionOnMap);                            // Рисуем юнитов на карте
   }
@@ -90,7 +89,9 @@ export default class GameController {
     });
   
     if (findPositionUnitUser || findPositionUnitUser === 0) {
-      this.gamePlay.deselectCell(this.selectedUnitPos);                                // Удаляем предыдущее выделение юнита
+      if (this.selectedUnitPos || this.selectedUnitPos === 0) {
+        this.gamePlay.deselectCell(this.selectedUnitPos);                              // Удаляем предыдущее выделение юнита
+      }
       this.gamePlay.selectCell(index);                                                 // Выделяем юнит
       this.selectedUnitPos = index;    
       this.unitsPositionOnMap.forEach((a, i) => {
@@ -99,7 +100,7 @@ export default class GameController {
 
       this.moveUnit = getMoveUnit(this.selectedUnit.type, this.selectedUnitPos, this.zoneMapBorder);
       this.attackUnit = getAttackUnit(this.selectedUnit.type, this.selectedUnitPos, this.zoneMapBorder);
-    } else if (findPositionUnitComp && typeof this.selectedUnitPos === 'object') {
+    } else if (findPositionUnitComp && this.selectedUnitPos === undefined) {
       GamePlay.showError('Этот персонаж неиграбельный');
     }
 
@@ -128,12 +129,9 @@ export default class GameController {
           this.score -= getAttackStrategyComp(this.unitsPositionOnMap, this.lockCellUser, this.lockCellComp, 
             Character, this.gamePlay, this.selectedUnitPos, this.level, this.score);
           
-          
-          
-
           if (this.selectedUnit.health <= 0) {
             this.selectedUnit = new Object();
-            this.selectedUnitPos = new Number();
+            this.selectedUnitPos = undefined;
             this.moveUnit = new Array();
             this.attackUnit = new Array();
             this.gamePlay.deselectCell(index);
@@ -167,7 +165,7 @@ export default class GameController {
         }
         if (this.selectedUnit.health <= 0) {
           this.selectedUnit = new Object();
-          this.selectedUnitPos = new Number();
+          this.selectedUnitPos = undefined;
           this.moveUnit = new Array();
           this.attackUnit = new Array();
           if (index) {
@@ -181,7 +179,7 @@ export default class GameController {
         if (typeof levelNew === 'object') {
           if (levelNew.winner) {
             this.selectedUnit = new Object();
-            this.selectedUnitPos = new Number();
+            this.selectedUnitPos = undefined;
             this.moveUnit = new Array();
             this.attackUnit = new Array();
             this.gamePlay.deselectCell(index);
@@ -225,7 +223,7 @@ export default class GameController {
             this.gamePlay.deselectCell(this.selectedUnitPos);
             this.gamePlay.setCursor(cursors.auto);
             this.selectedUnit = new Object();
-            this.selectedUnitPos = new Number();
+            this.selectedUnitPos = undefined;
             this.moveUnit = new Array();
             this.attackUnit = new Array();
         }
@@ -240,7 +238,7 @@ export default class GameController {
         this.gamePlay.deselectCell(this.selectedUnitPos);
         this.gamePlay.setCursor(cursors.auto);
         this.selectedUnit = new Object();
-        this.selectedUnitPos = new Number();
+        this.selectedUnitPos = undefined;
         this.moveUnit = new Array();
         this.attackUnit = new Array();
       };
@@ -281,7 +279,7 @@ export default class GameController {
     const indexAttackUnit = this.attackUnit.find(a => a === index);
     const findPositionUnitUser = this.lockCellUser.find(a => a === index);
 
-    if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object') {
+    if (index !== this.selectedUnitPos && (this.selectedUnitPos || this.selectedUnitPos === 0)) {
       if ((indexMoveUnit || indexMoveUnit === 0)) {
         this.gamePlay.selectCell(indexMoveUnit, 'green');
         this.gamePlay.setCursor(cursors.pointer);
@@ -307,11 +305,11 @@ export default class GameController {
       const indexAttackUnit = this.attackUnit.find(a => a === index);
       this.gamePlay.hideCellTooltip(index);                                              // Удаляем подсказку
     
-      if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexMoveUnit || indexMoveUnit === 0)) {
+      if (index !== this.selectedUnitPos && (this.selectedUnitPos || this.selectedUnitPos === 0) && (indexMoveUnit || indexMoveUnit === 0)) {
         this.gamePlay.deselectCell(indexMoveUnit);
       }
 
-      if (index !== this.selectedUnitPos && typeof this.selectedUnitPos !== 'object' && (indexAttackUnit || indexAttackUnit === 0)) {
+      if (index !== this.selectedUnitPos && (this.selectedUnitPos || this.selectedUnitPos === 0) && (indexAttackUnit || indexAttackUnit === 0)) {
         this.gamePlay.deselectCell(indexAttackUnit);
       }
     }
@@ -327,7 +325,7 @@ export default class GameController {
     
     this.turn = 'user';
     this.selectedUnit = new Object();
-    this.selectedUnitPos = new Number();
+    this.selectedUnitPos = undefined;
     this.moveUnit = new Array();
     this.attackUnit = new Array();
     this.level = 1;
@@ -403,7 +401,13 @@ export default class GameController {
         const positions = [];
         unitsPositionOnMapObj.forEach(a => {
           const unit = unitsCls.find(u => u.name.toLowerCase() === a.character.type);
-          if (unit) newUnitsPositionOnMapArr.push(new unit);
+          
+          if (unit) newUnitsPositionOnMapArr.push(new unit)
+          else {
+            const unitsStrArr = ['bowman', 'swordsman', 'magician', 'daemon', 'undead', 'vampire'];
+            const unitIndex = unitsStrArr.findIndex(u => u === a.character.type);
+            if (unitIndex !== -1) newUnitsPositionOnMapArr.push(new unitsCls[unitIndex]);
+          }
           positions.push(a.position);
         });
   
@@ -413,7 +417,7 @@ export default class GameController {
           arg.character.level = unitsPositionOnMapObj[i].character.level;
         });
         
-        this.gamePlay.selectCell(this.selectedUnitPos);
+        if (this.selectedUnitPos || this.selectedUnitPos === 0) this.gamePlay.selectCell(this.selectedUnitPos);
         this.lockCellUpdate();
         this.gamePlay.redrawPositions(this.unitsPositionOnMap);
         this.lock = false;
